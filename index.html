@@ -5,436 +5,109 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>矿工大亨 - 放置点击游戏</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box--sizing: border-box; }
+        body { font-family: 'Segoe UI', sans-serif; background: linear-135deg, #1a1a2e, #16213e; min-height: 100vh; color: #fff; overflow-x: hidden; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: rgba(255,255,255,0.1); border-radius: 20px; padding: 20px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px; }
+        .title { font-size: 28px; background: linear-gradient(90deg, #ffd700, #ffaa00); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+        .stats { display: flex; gap: 30px; }
+        .stat-item { text-align: center; }
+        .stat-label { font-size: 12px; color: #aaa; }
+        .stat-value { font-size: 24px; font-weight: bold; color: #ffd700; }
+        .game-area { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        @media (max-width: 900px) { .game-area { grid-template-columns: 1fr; } }
+        .mine-section { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; text-align: center; }
+        .mine-btn { width: 200px; height: 200px; border-radius: 50%; border: none; cursor: pointer; background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00, #ff4500); box-shadow: 0 10px 30px rgba(255,215,0,0.4), inset 0 -10px 30px rgba(0,0,0,0.3); transition: all 0.1s; }
+        .mine-btn:hover { transform: scale(1.05); }
+        .mine-btn:active { transform: scale(0.95); }
+        .mine-btn::after { content: '⛏️'; font-size: 80px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
+        .click-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        .click-text { position: absolute; font-size: 24px; font-weight: bold; color: #ffd700; animation: floatUp 1s ease-out forwards; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
+        .upgrade-panel { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; }
+        .panel-title { font-size: 20px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+        .upgrade-item { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
+        .upgrade-item:hover { background: rgba(255,255,255,0.12); }
+        .upgrade-item.locked { opacity: 0.5; cursor: not-allowed; }
+        .upgrade-info h4 { font-size: 16px; margin-bottom: 5px; }
+        .upgrade-info p { font-size: 12px; color: #aaa; }
+        .upgrade-cost { text-align: right; }
+        .cost-value { font-size: 18px; font-weight: bold; color: #ffd700; }
+        .cost-label { font-size: 11px; color: #888; }
+        .owned { font-size: 12px; color: #4ade80; margin-top: 5px; }
         
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
-            min-height: 100vh;
-            color: #fff;
-            overflow-x: hidden;
-        }
+        /* 广告区域 */
+        .ad-banner { background: linear-gradient(90deg, #1a1a2e, #2d2d5a); border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: center; border: 2px dashed #4a4a8a; }
+        .ad-banner.has-ads { border: 2px solid #ffd700; background: linear-gradient(90deg, #2d2d1a, #4a4a2a); }
+        .ad-text { font-size: 14px; color: #888; }
+        .ad-banner.has-ads .ad-text { color: #ffd700; }
         
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+        /* 商店按钮 */
+        .shop-btn { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(90deg, #ff6b6b, #ee5a5a); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #fff; box-shadow: 0 5px 20px rgba(255,107,107,0.4); animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { box-shadow: 0 5px 20px rgba(255,107,107,0.4); } 50% { box-shadow: 0 5px 30px rgba(255,107,107,0.8); } }
         
-        /* 顶部状态栏 */
-        .header {
-            background: rgba(255,255,255,0.1);
-            backdrop-filter: blur(10px);
-            border-radius: 20px;
-            padding: 20px 30px;
-            margin-bottom: 20px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
-        }
+        /* 商店弹窗 */
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 2000; justify-content: center; align-items: center; }
+        .modal.show { display: flex; }
+        .modal-content { background: #1a1a2e; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; border: 2px solid #ffd700; }
+        .modal h2 { color: #ffd700; margin-bottom: 20px; text-align: center; }
+        .shop-item { background: rgba(255,255,255,0.08); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .shop-item:hover { border-color: rgba(255,215,0,0.5); background: rgba(255,255,255,0.12); }
+        .shop-item.owned { border-color: #4ade80; }
+        .shop-item-info h4 { font-size: 18px; margin-bottom: 5px; }
+        .shop-item-info p { font-size: 13px; color: #aaa; }
+        .shop-item-price { text-align: right; }
+        .price-value { font-size: 20px; font-weight: bold; color: #ffd700; }
+        .price-label { font-size: 11px; color: #888; }
+        .shop-item.owned .price-value { color: #4ade80; }
+        .close-btn { position: absolute; top: 20px; right: 20px; background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; }
         
-        .title {
-            font-size: 28px;
-            font-weight: bold;
-            background: linear-gradient(90deg, #ffd700, #ffaa00);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-        }
+        /* 激励广告按钮 */
+        .reward-btn { background: linear-gradient(90deg, #4ade80, #22c55e); border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 10px; }
         
-        .stats {
-            display: flex;
-            gap: 30px;
-            flex-wrap: wrap;
-        }
-        
-        .stat-item {
-            text-align: center;
-        }
-        
-        .stat-label {
-            font-size: 12px;
-            color: #aaa;
-            text-transform: uppercase;
-        }
-        
-        .stat-value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffd700;
-        }
-        
-        /* 主游戏区域 */
-        .game-area {
-            display: grid;
-            grid-template-columns: 1fr 350px;
-            gap: 20px;
-        }
-        
-        @media (max-width: 900px) {
-            .game-area {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        /* 挖矿区域 */
-        .mine-section {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-        }
-        
-        .mine-btn {
-            width: 200px;
-            height: 200px;
-            border-radius: 50%;
-            border: none;
-            cursor: pointer;
-            background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00, #ff4500);
-            box-shadow: 
-                0 10px 30px rgba(255,215,0,0.4),
-                inset 0 -10px 30px rgba(0,0,0,0.3),
-                0 0 60px rgba(255,215,0,0.2);
-            transition: all 0.1s;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .mine-btn:hover {
-            transform: scale(1.05);
-        }
-        
-        .mine-btn:active {
-            transform: scale(0.95);
-            box-shadow: 
-                0 5px 15px rgba(255,215,0,0.4),
-                inset 0 -5px 20px rgba(0,0,0,0.3);
-        }
-        
-        .mine-btn::after {
-            content: '⛏️';
-            font-size: 80px;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-        
-        .mine-btn-text {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #ccc;
-        }
-        
-        /* 点击特效容器 */
-        .click-effects {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: 1000;
-        }
-        
-        .click-text {
-            position: absolute;
-            font-size: 24px;
-            font-weight: bold;
-            color: #ffd700;
-            animation: floatUp 1s ease-out forwards;
-            text-shadow: 0 0 10px rgba(255,215,0,0.8);
-        }
-        
-        @keyframes floatUp {
-            0% {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-            100% {
-                opacity: 0;
-                transform: translateY(-100px) scale(1.5);
-            }
-        }
-        
-        /* 升级面板 */
-        .upgrade-panel {
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 20px;
-        }
-        
-        .panel-title {
-            font-size: 20px;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-        }
-        
-        .upgrade-item {
-            background: rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 15px;
-            margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 2px solid transparent;
-        }
-        
-        .upgrade-item:hover {
-            background: rgba(255,255,255,0.12);
-            border-color: rgba(255,215,0,0.3);
-        }
-        
-        .upgrade-item.locked {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .upgrade-info h4 {
-            font-size: 16px;
-            margin-bottom: 5px;
-        }
-        
-        .upgrade-info p {
-            font-size: 12px;
-            color: #aaa;
-        }
-        
-        .upgrade-cost {
-            text-align: right;
-        }
-        
-        .cost-value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #ffd700;
-        }
-        
-        .cost-label {
-            font-size: 11px;
-            color: #888;
-        }
-        
-        .owned {
-            font-size: 12px;
-            color: #4ade80;
-            margin-top: 5px;
-        }
-        
-        /* 成就系统 */
-        .achievements {
-            margin-top: 20px;
-            background: rgba(255,255,255,0.05);
-            border-radius: 20px;
-            padding: 20px;
-        }
-        
-        .achievement-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
-            gap: 10px;
-        }
-        
-        .achievement {
-            background: rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .achievement.unlocked {
-            background: rgba(255,215,0,0.2);
-            border: 1px solid #ffd700;
-        }
-        
-        .achievement-icon {
-            font-size: 30px;
-            margin-bottom: 5px;
-        }
-        
-        .achievement-name {
-            font-size: 10px;
-            color: #aaa;
-        }
-        
-        .achievement.unlocked .achievement-name {
-            color: #ffd700;
-        }
-        
-        /* 底部提示 */
-        .footer {
-            margin-top: 20px;
-            text-align: center;
-            color: #666;
-            font-size: 12px;
-        }
-        
-        /* 弹窗 */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 2000;
-            justify-content: center;
-            align-items: center;
-        }
-        
-        .modal.show {
-            display: flex;
-        }
-        
-        .modal-content {
-            background: #1a1a2e;
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 400px;
-            text-align: center;
-            border: 2px solid #ffd700;
-        }
-        
-        .modal h2 {
-            color: #ffd700;
-            margin-bottom: 15px;
-        }
-        
-        .modal p {
-            margin-bottom: 20px;
-            color: #ccc;
-        }
-        
-        .modal-btn {
-            background: linear-gradient(90deg, #ffd700, #ff8c00);
-            border: none;
-            padding: 12px 30px;
-            border-radius: 25px;
-            font-size: 16px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #1a1a2e;
-            transition: all 0.2s;
-        }
-        
-        .modal-btn:hover {
-            transform: scale(1.05);
-        }
+        .footer { margin-top: 20px; text-align: center; color: #666; font-size: 12px; }
         
         /* 离线收益 */
-        .offline-earnings {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            border: 2px solid #ffd700;
-            border-radius: 20px;
-            padding: 30px;
-            text-align: center;
-            z-index: 3000;
-            display: none;
-        }
-        
-        .offline-earnings.show {
-            display: block;
-            animation: popIn 0.3s ease-out;
-        }
-        
-        @keyframes popIn {
-            0% { transform: translate(-50%, -50%) scale(0.5); opacity: 0; }
-            100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
-        }
-        
-        .offline-amount {
-            font-size: 36px;
-            color: #ffd700;
-            font-weight: bold;
-            margin: 15px 0;
-        }
+        .offline-earnings { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); border: 2px solid #ffd700; border-radius: 20px; padding: 30px; text-align: center; z-index: 3000; display: none; }
+        .offline-earnings.show { display: block; animation: popIn 0.3s; }
+        @keyframes popIn { 0% { transform: translate(-50%, -50%) scale(0.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
+        .offline-amount { font-size: 36px; color: #ffd700; font-weight: bold; margin: 15px 0; }
         
         /* 每日奖励 */
-        .daily-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: linear-gradient(90deg, #ffd700, #ff8c00);
-            border: none;
-            padding: 15px 25px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: bold;
-            cursor: pointer;
-            color: #1a1a2e;
-            box-shadow: 0 5px 20px rgba(255,215,0,0.4);
-            animation: pulse 2s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { box-shadow: 0 5px 20px rgba(255,215,0,0.4); }
-            50% { box-shadow: 0 5px 30px rgba(255,215,0,0.8); }
-        }
+        .daily-btn { position: fixed; bottom: 20px; left: 20px; background: linear-gradient(90deg, #ffd700, #ff8c00); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,215,0,0.4); }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- 广告条 -->
+        <div class="ad-banner" id="adBanner">
+            <div class="ad-text">📢 广告位招租 - 投放广告请联系</div>
+        </div>
+        
         <!-- 顶部状态 -->
         <div class="header">
             <div class="title">⛏️ 矿工大亨</div>
             <div class="stats">
-                <div class="stat-item">
-                    <div class="stat-label">金币</div>
-                    <div class="stat-value" id="gold">0</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">每秒收益</div>
-                    <div class="stat-value" id="gps">0/s</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">点击收益</div>
-                    <div class="stat-value" id="click-power">1</div>
-                </div>
+                <div class="stat-item"><div class="stat-label">金币</div><div class="stat-value" id="gold">0</div></div>
+                <div class="stat-item"><div class="stat-label">每秒收益</div><div class="stat-value" id="gps">0/s</div></div>
+                <div class="stat-item"><div class="stat-label">点击收益</div><div class="stat-value" id="click-power">1</div></div>
             </div>
         </div>
         
         <!-- 游戏区域 -->
         <div class="game-area">
-            <!-- 挖矿区域 -->
             <div class="mine-section">
                 <button class="mine-btn" id="mineBtn"></button>
-                <p class="mine-btn-text">点击挖掘黄金！</p>
+                <p>点击挖掘黄金！</p>
+                <button class="reward-btn" onclick="watchAd()">🎬 看广告领奖励 (50金币)</button>
             </div>
-            
-            <!-- 升级面板 -->
             <div class="upgrade-panel">
                 <h3 class="panel-title">🛠️ 升级</h3>
                 <div id="upgrades"></div>
             </div>
         </div>
         
-        <!-- 成就系统 -->
-        <div class="achievements">
-            <h3 class="panel-title">🏆 成就</h3>
-            <div class="achievement-grid" id="achievements"></div>
-        </div>
-        
-        <div class="footer">
-            游戏加载完成 | © 2026 矿工大亨
-        </div>
+        <div class="footer">游戏加载完成 | 💰 内购支持开发 | © 2026 矿工大亨</div>
     </div>
     
     <!-- 离线收益弹窗 -->
@@ -443,54 +116,53 @@
         <p>离线期间收益</p>
         <div class="offline-amount" id="offlineAmount">0</div>
         <p>金币</p>
-        <button class="modal-btn" onclick="closeOfflineModal()">收下！</button>
+        <button class="shop-btn" onclick="closeOfflineModal()" style="position:static;margin-top:15px;">收下！</button>
     </div>
     
-    <!-- 每日奖励按钮 -->
-    <button class="daily-btn" id="dailyBtn" onclick="claimDaily()">
-        🎁 每日奖励
-    </button>
+    <!-- 商店按钮 -->
+    <button class="shop-btn" onclick="openShop()">🛒 商店</button>
+    
+    <!-- 每日奖励 -->
+    <button class="daily-btn" onclick="claimDaily()">🎁 每日</button>
+    
+    <!-- 商店弹窗 -->
+    <div class="modal" id="shopModal">
+        <div class="modal-content">
+            <button class="close-btn" onclick="closeShop()">×</button>
+            <h2>🛒 商店</h2>
+            <div id="shopItems"></div>
+        </div>
+    </div>
     
     <div class="click-effects" id="clickEffects"></div>
 
     <script>
         // ========== 游戏数据 ==========
-        let gameData = {
-            gold: 0,
-            totalGold: 0,
-            clickPower: 1,
-            goldPerSecond: 0,
-            lastSave: Date.now(),
-            upgrades: {},
-            achievements: {},
-            dailyClaimed: false,
-            dailyTime: 0
-        };
+        let gameData = { gold: 0, totalGold: 0, clickPower: 1, goldPerSecond: 0, lastSave: Date.now(), upgrades: {}, purchases: {}, dailyClaimed: false, dailyTime: 0 };
         
         // 升级配置
         const upgradeConfig = [
-            { id: 'pickaxe', name: '更好的镐子', desc: '点击伤害+1', baseCost: 15, costMult: 1.5, effect: () => { gameData.clickPower += 1; } },
-            { id: 'miner', name: '雇佣矿工', desc: '每秒+1金币', baseCost: 50, costMult: 1.4, effect: () => { gameData.goldPerSecond += 1; } },
-            { id: 'drill', name: '钻探机', desc: '每秒+5金币', baseCost: 500, costMult: 1.5, effect: () => { gameData.goldPerSecond += 5; } },
-            { id: 'mine', name: '购买矿洞', desc: '每秒+20金币', baseCost: 3000, costMult: 1.6, effect: () => { gameData.goldPerSecond += 20; } },
-            { id: 'factory', name: '黄金工厂', desc: '每秒+100金币', baseCost: 20000, costMult: 1.7, effect: () => { gameData.goldPerSecond += 100; } },
-            { id: 'bank', name: '黄金银行', desc: '每秒+500金币', baseCost: 150000, costMult: 1.8, effect: () => { gameData.goldPerSecond += 500; } },
-            { id: 'alchemy', name: '炼金术', desc: '点击+10金币', baseCost: 10000, costMult: 2, effect: () => { gameData.clickPower += 10; } }
+            { id: 'pickaxe', name: '更好的镐子', desc: '点击+1', baseCost: 15, costMult: 1.5, effect: () => { gameData.clickPower += 1; } },
+            { id: 'miner', name: '雇佣矿工', desc: '每秒+1', baseCost: 50, costMult: 1.4, effect: () => { gameData.goldPerSecond += 1; } },
+            { id: 'drill', name: '钻探机', desc: '每秒+5', baseCost: 500, costMult: 1.5, effect: () => { gameData.goldPerSecond += 5; } },
+            { id: 'mine', name: '矿洞', desc: '每秒+20', baseCost: 3000, costMult: 1.6, effect: () => { gameData.goldPerSecond += 20; } },
+            { id: 'factory', name: '黄金工厂', desc: '每秒+100', baseCost: 20000, costMult: 1.7, effect: () => { gameData.goldPerSecond += 100; } },
+            { id: 'alchemy', name: '炼金术', desc: '点击+10', baseCost: 10000, costMult: 2, effect: () => { gameData.clickPower += 10; } }
         ];
         
-        // 成就配置
-        const achievementConfig = [
-            { id: 'first_gold', name: '第一桶金', icon: '💰', req: 100 },
-            { id: 'thousand', name: '千元户', icon: '💵', req: 1000 },
-            { id: '10k', name: '万元户', icon: '🏆', req: 10000 },
-            { id: '100k', name: '十万', icon: '👑', req: 100000 },
-            { id: 'million', name: '百万富翁', icon: '🎰', req: 1000000 },
-            { id: 'click_100', name: '点击百次', icon: '👆', req: 100, type: 'clicks' },
-            { id: 'click_1000', name: '千次点击', icon: '🖱️', req: 1000, type: 'clicks' },
-            { id: 'upgrade_5', name: '升级5次', icon: '⬆️', req: 5, type: 'upgrades' },
-            { id: 'offline', name: '离线收益', icon: '🌙', req: 1000, type: 'offline' },
-            { id: 'daily_7', name: '坚持7天', icon: '📅', req: 7, type: 'daily' }
+        // 商店内购配置
+        const shopItems = [
+            { id: 'no_ads', name: '去广告', desc: '移除所有广告，展现你的尊贵！', price: 30, type: 'one_time', icon: '🚫' },
+            { id: 'gold_100', name: '100金币', desc: '快速起步，领先一步！', price: 3, type: 'currency', icon: '💰' },
+            { id: 'gold_500', name: '500金币', desc: '买5送1，超值划算！', price: 12, type: 'currency', icon: '💎' },
+            { id: 'gold_2000', name: '2000金币', desc: '钻石级待遇！', price: 40, type: 'currency', icon: '🏆' },
+            { id: 'vip_7', name: 'VIP 7天', desc: '双倍收益+专属称号', price: 50, type: 'subscription', icon: '⭐' },
+            { id: 'click_boost', name: '点击强化', desc: '永久+10点击伤害', price: 25, type: 'one_time', icon: '⚡' }
         ];
+        
+        // 广告配置
+        let showAds = true;
+        let adClickCount = 0;
         
         let totalClicks = 0;
         let totalUpgrades = 0;
@@ -500,13 +172,13 @@
             loadGame();
             checkOfflineEarnings();
             renderUpgrades();
-            renderAchievements();
+            renderShop();
             setupEventListeners();
             startGameLoop();
             updateDisplay();
+            checkAdStatus();
         }
         
-        // 加载存档
         function loadGame() {
             const saved = localStorage.getItem('minerTycoon');
             if (saved) {
@@ -514,10 +186,10 @@
                 gameData = { ...gameData, ...data };
                 totalClicks = gameData.totalClicks || 0;
                 totalUpgrades = gameData.totalUpgrades || 0;
+                showAds = !gameData.purchases.no_ads;
             }
         }
         
-        // 保存存档
         function saveGame() {
             gameData.lastSave = Date.now();
             gameData.totalClicks = totalClicks;
@@ -525,25 +197,21 @@
             localStorage.setItem('minerTycoon', JSON.stringify(gameData));
         }
         
-        // 离线收益计算
         function checkOfflineEarnings() {
             const now = Date.now();
-            const offlineTime = (now - gameData.lastSave) / 1000; // 秒
+            const offlineTime = (now - gameData.lastSave) / 1000;
             if (offlineTime > 60 && gameData.goldPerSecond > 0) {
-                const earnings = Math.floor(offlineTime * gameData.goldPerSecond * 0.5); // 50% offline efficiency
+                const earnings = Math.floor(offlineTime * gameData.goldPerSecond * 0.5);
                 if (earnings > 0) {
                     gameData.gold += earnings;
                     gameData.totalGold += earnings;
                     document.getElementById('offlineAmount').textContent = formatNumber(earnings);
                     document.getElementById('offlineModal').classList.add('show');
-                    checkAchievements('offline', earnings);
                 }
             }
         }
         
-        function closeOfflineModal() {
-            document.getElementById('offlineModal').classList.remove('show');
-        }
+        function closeOfflineModal() { document.getElementById('offlineModal').classList.remove('show'); }
         
         // ========== 渲染 ==========
         function renderUpgrades() {
@@ -552,49 +220,28 @@
                 const owned = gameData.upgrades[u.id] || 0;
                 const cost = Math.floor(u.baseCost * Math.pow(u.costMult, owned));
                 const canAfford = gameData.gold >= cost;
-                
-                return `
-                    <div class="upgrade-item ${canAfford ? '' : 'locked'}" onclick="buyUpgrade('${u.id}')">
-                        <div class="upgrade-info">
-                            <h4>${u.name}</h4>
-                            <p>${u.desc}</p>
-                            <div class="owned">已购买: ${owned}</div>
-                        </div>
-                        <div class="upgrade-cost">
-                            <div class="cost-value">${formatNumber(cost)}</div>
-                            <div class="cost-label">💰</div>
-                        </div>
-                    </div>
-                `;
+                return `<div class="upgrade-item ${canAfford ? '' : 'locked'}" onclick="buyUpgrade('${u.id}')"><div class="upgrade-info"><h4>${u.name}</h4><p>${u.desc}</p><div class="owned">已购买: ${owned}</div></div><div class="upgrade-cost"><div class="cost-value">${formatNumber(cost)}</div><div class="cost-label">💰</div></div></div>`;
             }).join('');
         }
         
-        function renderAchievements() {
-            const container = document.getElementById('achievements');
-            container.innerHTML = achievementConfig.map(a => {
-                const unlocked = gameData.achievements[a.id];
-                let progress = 0;
-                
-                if (a.type === 'clicks') {
-                    progress = totalClicks;
-                } else if (a.type === 'upgrades') {
-                    progress = totalUpgrades;
-                } else if (a.type === 'daily') {
-                    progress = gameData.dailyStreak || 0;
-                } else if (a.type === 'offline') {
-                    progress = gameData.maxOffline || 0;
-                } else {
-                    progress = gameData.totalGold;
-                }
-                
-                return `
-                    <div class="achievement ${unlocked ? 'unlocked' : ''}" 
-                         title="${a.name}: ${Math.min(progress, a.req)}/${a.req}">
-                        <div class="achievement-icon">${a.icon}</div>
-                        <div class="achievement-name">${a.name}</div>
-                    </div>
-                `;
+        function renderShop() {
+            const container = document.getElementById('shopItems');
+            container.innerHTML = shopItems.map(item => {
+                const owned = gameData.purchases[item.id] ? 'owned' : '';
+                const ownedText = gameData.purchases[item.id] ? ' (已购买)' : '';
+                return `<div class="shop-item ${owned}" onclick="buyItem('${item.id}')"><div class="shop-item-info"><h4>${item.icon} ${item.name}</h4><p>${item.desc}</p></div><div class="shop-item-price"><div class="price-value">$${item.price}${ownedText}</div><div class="price-label">美元</div></div></div>`;
             }).join('');
+        }
+        
+        function checkAdStatus() {
+            const banner = document.getElementById('adBanner');
+            if (showAds) {
+                banner.classList.add('has-ads');
+                banner.innerHTML = '<div class="ad-text">📢 这里是广告位 - 感谢广告支持开发！</div>';
+            } else {
+                banner.classList.remove('has-ads');
+                banner.innerHTML = '<div class="ad-text">🌟 感谢使用无广告版本！</div>';
+            }
         }
         
         // ========== 游戏逻辑 ==========
@@ -603,18 +250,16 @@
             gameData.gold += goldGain;
             gameData.totalGold += goldGain;
             totalClicks++;
-            
-            // 点击特效
-            createClickEffect(e.clientX, e.clientY, `+${formatNumber(goldGain)}`);
-            
-            // 检查成就
-            checkAchievements('click', goldGain);
-            checkAchievements('click_100', totalClicks, 'clicks');
-            checkAchievements('click_1000', totalClicks, 'clicks');
-            
+            createClickEffect(e.clientX, e.clientY, '+' + formatNumber(goldGain));
             updateDisplay();
             renderUpgrades();
-            renderAchievements();
+            
+            // 每10次点击显示插屏广告（模拟）
+            adClickCount++;
+            if (showAds && adClickCount >= 10) {
+                adClickCount = 0;
+                showInterstitialAd();
+            }
         }
         
         function createClickEffect(x, y, text) {
@@ -625,7 +270,6 @@
             el.style.left = (x - 20 + Math.random() * 40) + 'px';
             el.style.top = (y - 20 + Math.random() * 40) + 'px';
             container.appendChild(el);
-            
             setTimeout(() => el.remove(), 1000);
         }
         
@@ -633,66 +277,111 @@
             const upgrade = upgradeConfig.find(u => u.id === id);
             const owned = gameData.upgrades[id] || 0;
             const cost = Math.floor(upgrade.baseCost * Math.pow(upgrade.costMult, owned));
-            
             if (gameData.gold >= cost) {
                 gameData.gold -= cost;
                 gameData.upgrades[id] = owned + 1;
                 totalUpgrades++;
-                
                 upgrade.effect();
+                saveGame();
+                updateDisplay();
+                renderUpgrades();
+            }
+        }
+        
+        // ========== 商店功能 ==========
+        function openShop() { document.getElementById('shopModal').classList.add('show'); }
+        function closeShop() { document.getElementById('shopModal').classList.remove('show'); }
+        
+        function buyItem(itemId) {
+            const item = shopItems.find(i => i.id === itemId);
+            if (!item) return;
+            if (gameData.purchases[item.id]) return; // 已购买
+            
+            // 这里应该是真实的支付流程（Stripe/PayPal等）
+            // 模拟支付
+            const confirmBuy = confirm(`确认购买 "${item.name}" - $${item.price} 美元？\n\n(测试模式：点击确定模拟购买成功)`);
+            if (confirmBuy) {
+                gameData.purchases[item.id] = true;
                 
-                checkAchievements('upgrade_5', totalUpgrades, 'upgrades');
+                // 发放道具
+                if (item.type === 'currency') {
+                    const goldAmount = item.id === 'gold_100' ? 100 : item.id === 'gold_500' ? 500 : 2000;
+                    gameData.gold += goldAmount;
+                    alert(`购买成功！已获得 ${goldAmount} 金币！`);
+                } else if (item.id === 'no_ads') {
+                    showAds = false;
+                    checkAdStatus();
+                    alert('去广告成功！');
+                } else if (item.id === 'click_boost') {
+                    gameData.clickPower += 10;
+                    alert('点击强化成功！伤害+10');
+                } else if (item.id === 'vip_7') {
+                    gameData.goldPerSecond *= 2;
+                    alert('VIP激活！收益翻倍7天！');
+                }
                 
                 saveGame();
                 updateDisplay();
                 renderUpgrades();
-                renderAchievements();
+                renderShop();
             }
         }
         
-        function checkAchievements(id, value, type = 'gold') {
-            const ach = achievementConfig.find(a => a.id === id);
-            if (!ach || gameData.achievements[id]) return;
+        // ========== 广告系统 ==========
+        function watchAd() {
+            if (!showAds) {
+                gameData.gold += 50;
+                updateDisplay();
+                alert('无广告版：直接获得50金币！');
+                return;
+            }
             
-            const threshold = type === 'gold' ? ach.req : ach.req;
-            if (value >= threshold) {
-                gameData.achievements[id] = true;
-                showNotification(`🏆 解锁成就: ${ach.name}`);
-                saveGame();
-                renderAchievements();
-            }
+            // 模拟激励视频广告
+            const adOverlay = document.createElement('div');
+            adOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;display:flex;justify-content:center;align-items:center;flex-direction:column;';
+            adOverlay.innerHTML = '<h2 style="color:#ffd700;margin-bottom:30px;">🎬 正在播放广告...</h2><p style="color:#aaa;">3秒后获得奖励</p>';
+            document.body.appendChild(adOverlay);
+            
+            setTimeout(() => {
+                adOverlay.remove();
+                gameData.gold += 50;
+                updateDisplay();
+                alert('🎁 观看广告获得50金币！');
+            }, 3000);
         }
         
-        function showNotification(msg) {
-            // 简单实现：可以在此添加更复杂的通知
-            console.log(msg);
+        function showInterstitialAd() {
+            // 模拟插屏广告
+            const adModal = document.createElement('div');
+            adModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:4000;display:flex;justify-content:center;align-items:center;';
+            adModal.innerHTML = '<div style="background:#1a1a2e;padding:40px;border-radius:20px;text-align:center;border:2px solid #ffd700;"><h2 style="color:#ffd700;margin-bottom:20px;">📢 广告</h2><p style="color:#aaa;margin-bottom:20px;">即将跳转...</p></div>';
+            document.body.appendChild(adModal);
+            
+            setTimeout(() => {
+                adModal.remove();
+            }, 2000);
         }
         
         // 每日奖励
         function claimDaily() {
             const now = Date.now();
             const dayMs = 24 * 60 * 60 * 1000;
-            
             if (now - gameData.dailyTime < dayMs && gameData.dailyClaimed) {
-                showNotification('今日奖励已领取！');
+                alert('今日奖励已领取！');
                 return;
             }
-            
             const reward = 100 + (gameData.dailyStreak || 0) * 50;
             gameData.gold += reward;
             gameData.totalGold += reward;
             gameData.dailyClaimed = true;
             gameData.dailyTime = now;
             gameData.dailyStreak = (gameData.dailyStreak || 0) + 1;
-            
-            showNotification(`🎁 每日奖励: +${formatNumber(reward)} 金币！`);
-            checkAchievements('daily_7', gameData.dailyStreak, 'daily');
-            
+            alert('🎁 每日奖励: +' + formatNumber(reward) + ' 金币！');
             saveGame();
             updateDisplay();
         }
         
-        // ========== 游戏循环 ==========
+        // 游戏循环
         function startGameLoop() {
             setInterval(() => {
                 if (gameData.goldPerSecond > 0) {
@@ -702,8 +391,6 @@
                     renderUpgrades();
                 }
             }, 1000);
-            
-            // 自动保存
             setInterval(saveGame, 30000);
         }
         
@@ -720,11 +407,8 @@
             return Math.floor(num).toString();
         }
         
-        function setupEventListeners() {
-            document.getElementById('mineBtn').addEventListener('click', clickMine);
-        }
+        function setupEventListeners() { document.getElementById('mineBtn').addEventListener('click', clickMine); }
         
-        // 启动游戏
         init();
     </script>
 </body>
