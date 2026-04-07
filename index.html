@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>矿工大亨 - 放置点击游戏</title>
+    <title>矿工大亨 - 放置游戏</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', sans-serif; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%); min-height: 100vh; color: #fff; overflow-x: hidden; }
@@ -14,79 +14,101 @@
         .stat-item { text-align: center; }
         .stat-label { font-size: 12px; color: #aaa; }
         .stat-value { font-size: 24px; font-weight: bold; color: #ffd700; }
-        .game-areas { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
-        @media (max-width: 900px) { .game-areas { grid-template-columns: 1fr; } }
+        
+        .tab-nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        .tab-btn { padding: 12px 24px; border-radius: 25px; border: none; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.3s; background: rgba(255,255,255,0.1); color: #aaa; }
+        .tab-btn.active { background: linear-gradient(90deg, #ffd700, #ff8c00); color: #1a1a2e; }
+        
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* 游戏区域 */
+        .game-main { display: grid; grid-template-columns: 1fr 350px; gap: 20px; }
+        @media (max-width: 900px) { .game-main { grid-template-columns: 1fr; } }
         .mine-section { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 30px; text-align: center; }
-        .mine-btn { width: 200px; height: 200px; border-radius: 50%; border: none; cursor: pointer; background: radial-gradient(circle at 30% 30%, #ffd700, #ff8c00, #ff4500); box-shadow: 0 10px 30px rgba(255,215,0,0.4); transition: all 0.1s; position: relative; }
+        .mine-btn { width: 200px; height: 200px; border-radius: 50%; border: none; cursor: pointer; background: radial-gradient(30% 30%, #ffd700, #ff8c00, #ff4500); box-shadow: 0 10px 30px rgba(255,215,0,0.4); transition: all 0.1s; position: relative; }
         .mine-btn:hover { transform: scale(1.05); }
         .mine-btn:active { transform: scale(0.95); }
         .mine-btn::after { content: '⛏️'; font-size: 80px; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); }
-        .click-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
-        .click-text { position: absolute; font-size: 24px; font-weight: bold; color: #ffd700; animation: floatUp 1s ease-out forwards; text-shadow: 0 0 10px rgba(255,215,0,0.8); }
-        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-100px) scale(1.5); } }
+        
+        .map-select { display: flex; gap: 15px; flex-wrap: wrap; margin-bottom: 20px; justify-content: center; }
+        .map-btn { padding: 15px 25px; border-radius: 15px; border: 2px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); cursor: pointer; transition: all 0.3s; color: #fff; }
+        .map-btn:hover { border-color: #ffd700; }
+        .map-btn.active { border-color: #ffd700; background: rgba(255,215,0,0.2); }
+        .map-btn.locked { opacity: 0.5; cursor: not-allowed; }
+        
+        /* 升级 */
         .upgrade-panel { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; }
         .panel-title { font-size: 20px; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.1); }
         .upgrade-item { background: rgba(255,255,255,0.08); border-radius: 12px; padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; }
         .upgrade-item:hover { background: rgba(255,255,255,0.12); }
         .upgrade-item.locked { opacity: 0.5; cursor: not-allowed; }
-        .upgrade-info h4 { font-size: 16px; margin-bottom: 5px; }
-        .upgrade-info p { font-size: 12px; color: #aaa; }
-        .upgrade-cost { text-align: right; }
-        .cost-value { font-size: 18px; font-weight: bold; color: #ffd700; }
-        .cost-label { font-size: 11px; color: #888; }
-        .owned { font-size: 12px; color: #4ade80; margin-top: 5px; }
         
-        /* 广告 */
-        .ad-banner { background: linear-gradient(90deg, #1a1a2e, #2d2d5a); border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: center; border: 2px dashed #4a4a8a; }
-        .ad-banner.has-ads { border: 2px solid #ffd700; background: linear-gradient(90deg, #2d2d1a, #4a4a2a); }
-        .ad-text { font-size: 14px; color: #888; }
-        .ad-banner.has-ads .ad-text { color: #ffd700; }
+        /* 签到 */
+        .checkin-panel { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; }
+        .checkin-days { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin: 20px 0; }
+        .checkin-day { width: 60px; height: 70px; border-radius: 10px; background: rgba(255,255,255,0.1); display: flex; flex-direction: column; justify-content: center; align-items: center; cursor: pointer; transition: all 0.3s; }
+        .checkin-day:hover { background: rgba(255,215,0,0.2); }
+        .checkin-day.checked { background: linear-gradient(135deg, #4ade80, #22c55e); }
+        .checkin-day.today { border: 2px solid #ffd700; }
+        .checkin-day.future { opacity: 0.5; }
+        .checkin-day .day { font-size: 12px; color: #aaa; }
+        .checkin-day .reward { font-size: 14px; font-weight: bold; }
         
-        /* 玩家赚钱面板 */
-        .earn-panel { background: rgba(74, 222, 128, 0.1); border: 2px solid #4ade80; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
-        .earn-title { font-size: 20px; color: #4ade80; margin-bottom: 15px; display: flex; align-items: center; gap: 10px; }
+        /* 排行榜 */
+        .leaderboard-panel { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; }
+        .leaderboard-list { max-height: 400px; overflow-y: auto; }
+        .lb-item { display: flex; align-items: center; gap: 15px; padding: 15px; background: rgba(255,255,255,0.05); border-radius: 12px; margin-bottom: 10px; }
+        .lb-rank { font-size: 24px; font-weight: bold; width: 40px; text-align: center; }
+        .lb-rank-1 { color: #ffd700; }
+        .lb-rank-2 { color: #c0c0c0; }
+        .lb-rank-3 { color: #cd7f32; }
+        .lb-info { flex: 1; }
+        .lb-name { font-weight: bold; }
+        .lb-score { font-size: 14px; color: #aaa; }
+        .lb-trophy { font-size: 20px; }
+        
+        /* 聊天 */
+        .chat-panel { background: rgba(255,255,255,0.05); border-radius: 20px; padding: 20px; height: 500px; display: flex; flex-direction: column; }
+        .chat-messages { flex: 1; overflow-y: auto; margin-bottom: 15px; padding-right: 10px; }
+        .chat-msg { margin-bottom: 12px; padding: 10px 15px; background: rgba(255,255,255,0.08); border-radius: 12px; }
+        .chat-msg.system { background: rgba(255,215,0,0.1); border-left: 3px solid #ffd700; }
+        .chat-msg .msg-name { font-size: 12px; color: #4ade80; font-weight: bold; }
+        .chat-msg .msg-text { margin-top: 5px; }
+        .chat-input-area { display: flex; gap: 10px; }
+        .chat-input { flex: 1; padding: 12px; border-radius: 25px; border: none; background: rgba(255,255,255,0.1); color: #fff; outline: none; }
+        .chat-input::placeholder { color: #666; }
+        .chat-send { padding: 12px 25px; border-radius: 25px; border: none; background: linear-gradient(90deg, #4ade80, #22c55e); color: #fff; cursor: pointer; font-weight: bold; }
+        
+        /* 玩家赚钱 */
+        .earn-panel { background: rgba(74,222,128,0.1); border: 2px solid #4ade80; border-radius: 20px; padding: 20px; margin-bottom: 20px; }
+        .earn-title { font-size: 20px; color: #4ade80; margin-bottom: 15px; }
         .earn-stats { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 15px; }
-        .earn-stat { background: rgba(0,0,0,0.3); padding: 15px 25px; border-radius: 12px; text-align: center; flex: 1; min-width: 120px; }
+        .earn-stat { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 12px; text-align: center; flex: 1; min-width: 100px; }
         .earn-stat-value { font-size: 24px; font-weight: bold; color: #4ade80; }
         .earn-stat-label { font-size: 12px; color: #aaa; }
-        .earn-actions { display: flex; gap: 10px; flex-wrap: wrap; }
-        .earn-btn { flex: 1; padding: 15px; border-radius: 12px; border: none; cursor: pointer; font-size: 14px; font-weight: bold; transition: all 0.2s; min-width: 150px; }
-        .invite-btn { background: linear-gradient(90deg, #8b5cf6, #7c3aed); color: #fff; }
-        .invite-btn:hover { transform: scale(1.02); }
-        .exchange-btn { background: linear-gradient(90deg, #f59e0b, #d97706); color: #fff; }
-        .exchange-btn:hover { transform: scale(1.02); }
-        
-        /* 邀请弹窗 */
-        .invite-link { background: rgba(0,0,0,0.3); padding: 15px; border-radius: 10px; margin: 15px 0; word-break: break-all; font-family: monospace; font-size: 12px; color: #8b5cf6; }
         
         /* 商店 */
-        .shop-btn { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(90deg, #ff6b6b, #ee5a5a); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #fff; box-shadow: 0 5px 20px rgba(255,107,107,0.4); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%, 100% { box-shadow: 0 5px 20px rgba(255,107,107,0.4); } 50% { box-shadow: 0 5px 30px rgba(255,107,107,0.8); } }
+        .shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px,1fr)); gap: 15px; }
+        .shop-item { background: rgba(255,255,255,0.08); border-radius: 15px; padding: 20px; text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .shop-item:hover { border-color: rgba(255,215,0,0.5); }
+        .shop-item.owned { border-color: #4ade80; }
+        
+        .click-effects { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1000; }
+        .click-text { position: absolute; font-size: 24px; font-weight: bold; color: #ffd700; animation: floatUp 1s ease-out forwards; }
+        @keyframes floatUp { 0% { opacity: 1; transform: translateY(0); } 100% { opacity: 0; transform: translateY(-100px); } }
         
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 20000; justify-content: center; align-items: center; }
         .modal.show { display: flex; }
         .modal-content { background: #1a1a2e; border-radius: 20px; padding: 30px; max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; border: 2px solid #ffd700; position: relative; }
-        .modal h2 { color: #ffd700; margin-bottom: 20px; text-align: center; }
-        .shop-item { background: rgba(255,255,255,0.08); border-radius: 15px; padding: 20px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .shop-item:hover { border-color: rgba(255,215,0,0.5); }
-        .shop-item.owned { border-color: #4ade80; }
-        .shop-item-info h4 { font-size: 18px; margin-bottom: 5px; }
-        .shop-item-info p { font-size: 13px; color: #aaa; }
-        .shop-item-price { text-align: right; }
-        .price-value { font-size: 20px; font-weight: bold; color: #ffd700; }
-        .price-label { font-size: 11px; color: #888; }
         .close-btn { position: absolute; top: 15px; right: 20px; background: none; border: none; color: #fff; font-size: 30px; cursor: pointer; }
         
-        .reward-btn { background: linear-gradient(90deg, #4ade80, #22c55e); border: none; padding: 10px 20px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; color: #1a1a2e; margin-top: 10px; }
+        .shop-btn { position: fixed; bottom: 20px; right: 20px; background: linear-gradient(90deg, #ff6b6b, #ee5a5a); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #fff; box-shadow: 0 5px 20px rgba(255,107,107,0.4); }
         
-        .footer { margin-top: 20px; text-align: center; color: #666; font-size: 12px; }
+        .daily-btn { position: fixed; bottom: 20px; left: 20px; background: linear-gradient(90deg, #ffd700, #ff8c00); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #1a1a2e; }
         
-        .offline-earnings { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.9); border: 2px solid #ffd700; border-radius: 20px; padding: 30px; text-align: center; z-index: 3000; display: none; }
-        .offline-earnings.show { display: block; animation: popIn 0.3s; }
-        @keyframes popIn { 0% { transform: translate(-50%, -50%) scale(0.5); } 100% { transform: translate(-50%, -50%) scale(1); } }
-        .offline-amount { font-size: 36px; color: #ffd700; font-weight: bold; margin: 15px 0; }
-        
-        .daily-btn { position: fixed; bottom: 20px; left: 20px; background: linear-gradient(90deg, #ffd700, #ff8c00); border: none; padding: 15px 25px; border-radius: 30px; font-size: 14px; font-weight: bold; cursor: pointer; color: #1a1a2e; box-shadow: 0 5px 20px rgba(255,215,0,0.4); }
+        .ad-banner { background: linear-gradient(90deg, #1a1a2e, #2d2d5a); border-radius: 15px; padding: 15px; margin-bottom: 20px; text-align: center; border: 2px dashed #4a4a8a; }
+        .ad-banner.ads { border-color: #ffd700; }
     </style>
 </head>
 <body>
@@ -97,128 +119,161 @@
             <div class="title">⛏️ 矿工大亨</div>
             <div class="stats">
                 <div class="stat-item"><div class="stat-label">金币</div><div class="stat-value" id="gold">0</div></div>
-                <div class="stat-item"><div class="stat-label">钻石</div><div class="stat-value" id="gems">0 💎</div></div>
+                <div class="stat-item"><div class="stat-label">钻石</div><div class="stat-value" id="gems">0</div></div>
                 <div class="stat-item"><div class="stat-label">收益</div><div class="stat-value" id="gps">0/s</div></div>
+                <div class="stat-item"><div class="stat-label">签到</div><div class="stat-value" id="streak">0天</div></div>
             </div>
         </div>
         
-        <!-- 玩家赚钱面板 -->
-        <div class="earn-panel">
-            <div class="earn-title">💰 玩家赚钱中心</div>
-            <div class="earn-stats">
-                <div class="earn-stat"><div class="earn-stat-value" id="totalPoints">0</div><div class="earn-stat-label">积分</div></div>
-                <div class="earn-stat"><div class="earn-stat-value" id="inviteCount">0</div><div class="earn-stat-label">已邀请</div></div>
-                <div class="earn-stat"><div class="earn-stat-value" id="cashOut">$0</div><div class="earn-stat-label">已提现</div></div>
+        <div class="tab-nav">
+            <button class="tab-btn active" onclick="switchTab('game')">🎮 游戏</button>
+            <button class="tab-btn" onclick="switchTab('checkin')">📅 签到</button>
+            <button class="tab-btn" onclick="switchTab('rank')">🏆 排行榜</button>
+            <button class="tab-btn" onclick="switchTab('chat')">💬 聊天</button>
+            <button class="tab-btn" onclick="switchTab('earn')">💰 赚钱</button>
+            <button class="tab-btn" onclick="switchTab('shop')">🛒 商店</button>
+        </div>
+        
+        <!-- 游戏 --> 
+        <div class="tab-content active" id="tab-game">
+            <div class="map-select">
+                <button class="map-btn active" onclick="selectMap(0)">🌲 森林矿场</button>
+                <button class="map-btn" onclick="selectMap(1)">🏔️ 雪山矿洞</button>
+                <button class="map-btn" onclick="selectMap(2)">🌋 火山深处</button>
+                <button class="map-btn locked" onclick="selectMap(3)">💎 钻石星球 🔒</button>
             </div>
-            <div class="earn-actions">
-                <button class="earn-btn invite-btn" onclick="inviteFriend()">📤 邀请好友 (+100积分)</button>
-                <button class="earn-btn exchange-btn" onclick="exchangePoints()">🎁 积分兑换</button>
+            <div class="game-main">
+                <div class="mine-section">
+                    <button class="mine-btn" id="mineBtn"></button>
+                    <p style="margin-top:15px;">点击挖掘！当前地图加成: <span id="mapBonus">x1</span></p>
+                </div>
+                <div class="upgrade-panel">
+                    <h3 class="panel-title">🛠️ 升级</h3>
+                    <div id="upgrades"></div>
+                </div>
             </div>
         </div>
         
-        <div class="game-areas">
-            <div class="mine-section">
-                <button class="mine-btn" id="mineBtn"></button>
-                <p style="margin-top:15px;">点击挖掘黄金！</p>
-                <button class="reward-btn" onclick="watchAd()">🎬 看广告 (+50积分)</button>
-            </div>
-            <div class="upgrade-panel">
-                <h3 class="panel-title">🛠️ 升级</h3>
-                <div id="upgrades"></div>
+        <!-- 签到 -->
+        <div class="tab-content" id="tab-checkin">
+            <div class="checkin-panel">
+                <h3 class="panel-title">📅 每日签到</h3>
+                <p style="color:#aaa;margin-bottom:20px;">连续签到7天，奖励翻倍！</p>
+                <div class="checkin-days" id="checkinDays"></div>
+                <button class="shop-btn" style="position:static;width:100%;" onclick="doCheckin()">📅 签到</button>
             </div>
         </div>
         
-        <div class="footer">💰 玩家也能赚钱 | 💎 内购支持 | 📤 邀请得积分 | © 2026 矿工大亨</div>
+        <!-- 排行榜 -->
+        <div class="tab-content" id="tab-rank">
+            <div class="leaderboard-panel">
+                <h3 class="panel-title">🏆 排行榜 - 总财富</h3>
+                <div class="leaderboard-list" id="leaderboardList"></div>
+                <button class="shop-btn" style="position:static;margin-top:15px;width:100%;" onclick="refreshLeaderboard()">🔄 刷新</button>
+            </div>
+        </div>
+        
+        <!-- 聊天 -->
+        <div class="tab-content" id="tab-chat">
+            <div class="chat-panel">
+                <h3 class="panel-title">💬 世界聊天</h3>
+                <div class="chat-messages" id="chatMessages"></div>
+                <div class="chat-input-area">
+                    <input type="text" class="chat-input" id="chatInput" placeholder="说点什么..." onkeypress="handleChatKey(event)">
+                    <button class="chat-send" onclick="sendChat()">发送</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 赚钱 -->
+        <div class="tab-content" id="tab-earn">
+            <div class="earn-panel">
+                <div class="earn-title">💰 玩家赚钱中心</div>
+                <div class="earn-stats">
+                    <div class="earn-stat"><div class="earn-stat-value" id="totalPoints">0</div><div class="earn-stat-label">积分</div></div>
+                    <div class="earn-stat"><div class="earn-stat-value" id="inviteCount">0</div><div class="earn-stat-label">已邀请</div></div>
+                    <div class="earn-stat"><div class="earn-stat-value" id="cashOut">$0</div><div class="earn-stat-label">已提现</div></div>
+                </div>
+                <button class="shop-btn" style="position:static;width:100%;margin-bottom:10px;background:linear-gradient(90deg,#8b5cf6,#7c3aed);" onclick="inviteFriend()">📤 邀请好友 (+100积分)</button>
+                <button class="shop-btn" style="position:static;width:100%;background:linear-gradient(90deg,#f59e0b,#d97706);" onclick="exchangePoints()">🎁 积分兑换</button>
+            </div>
+        </div>
+        
+        <!-- 商店 -->
+        <div class="tab-content" id="tab-shop">
+            <div class="shop-grid" id="shopItems"></div>
+        </div>
     </div>
     
-    <div class="offline-earnings" id="offlineModal">
-        <h2>🎉 欢迎回来！</h2><p>离线期间收益</p><div class="offline-amount" id="offlineAmount">0</div><p>金币</p><button class="shop-btn" style="position:static;margin-top:15px;" onclick="closeOfflineModal()">收下！</button>
-    </div>
+    <button class="daily-btn" onclick="switchTab('checkin');doCheckin()">📅 签到</button>
+    <button class="shop-btn" onclick="switchTab('shop')">🛒 商店</button>
     
-    <button class="shop-btn" onclick="openShop()">🛒 商店</button>
-    <button class="daily-btn" onclick="claimDaily()">🎁 每日</button>
-    
-    <div class="modal" id="shopModal">
-        <div class="modal-content"><button class="close-btn" onclick="closeShop()">×</button><h2>🛒 商店</h2><div id="shopItems"></div></div>
-    </div>
-    
-    <div class="modal" id="inviteModal">
-        <div class="modal-content"><button class="close-btn" onclick="closeInvite()">×</button><h2>📤 邀请好友</h2><p style="color:#aaa;margin-bottom:10px;">分享链接，好友注册后双方各得：</p><ul style="color:#4ade80;margin-bottom:15px;padding-left:20px;"><li>💰 1000 金币</li><li>💎 10 钻石</li><li>💵 $0.50 现金</li></ul><p style="color:#aaa;margin-bottom:5px;">你的邀请链接：</p><div class="invite-link" id="inviteLink">loading...</div><button class="earn-btn invite-btn" style="width:100%;margin-top:10px;" onclick="copyInviteLink()">📋 复制链接</button></div>
-    </div>
+    <div class="click-effects" id="clickEffects"></div>
     
     <div class="modal" id="exchangeModal">
-        <div class="modal-content"><button class="close-btn" onclick="closeExchange()">×</button><h2>🎁 积分兑换</h2><div style="margin:20px 0;"><div class="shop-item" onclick="doExchange(100, 500)"><div class="shop-item-info"><h4>💰 500金币</h4><p>需100积分</p></div><div class="shop-item-price"><div class="price-value">100</div><div class="price-label">积分</div></div></div><div class="shop-item" onclick="doExchange(500, 10)"><div class="shop-item-info"><h4>💎 10钻石</h4><p>需500积分</p></div><div class="shop-item-price"><div class="price-value">500</div><div class="price-label">积分</div></div></div><div class="shop-item" onclick="doExchange(1000, 1)"><div class="shop-item-info"><h4>💵 $1 现金</h4><p>需1000积分（满$10可提现）</p></div><div class="shop-item-price"><div class="price-value">1000</div><div class="price-label">积分</div></div></div><div class="shop-item" onclick="doExchange(5000, 'giftcard')"><div class="shop-item-info"><h4>🎁 $5 礼品卡</h4><p>需5000积分</p></div><div class="shop-item-price"><div class="price-value">5000</div><div class="price-label">积分</div></div></div></div></div>
+        <div class="modal-content"><button class="close-btn" onclick="closeExchange()">×</button><h2 style="color:#ffd700;text-align:center;margin-bottom:20px;">🎁 积分兑换</h2><div id="exchangeItems"></div></div>
     </div>
 
-    <div class="click-effects" id="clickEffects"></div>
     <script>
-        let gameData = { gold: 0, gems: 0, totalGold: 0, clickPower: 1, goldPerSecond: 0, lastSave: Date.now(), upgrades: {}, purchases: {}, dailyClaimed: false, dailyTime: 0, points: 0, invites: 0, cashOut: 0 };
+        const mapConfig = [{name:'森林矿场',bonus:1,req:0},{name:'雪山矿洞',bonus:2,req:10000},{name:'火山深处',bonus:3,req:100000},{name:'钻石星球',bonus:5,req:1000000}];
+        const upgradeConfig = [{id:'pickaxe',name:'镐子',desc:'点击+1',baseCost:15,costMult:1.5,effect:()=>{g.clickPower+=1}},{id:'miner',name:'矿工',desc:'收益+1/s',baseCost:50,costMult:1.4,effect:()=>{g.goldPerSecond+=1}},{id:'drill',name:'钻探机',desc:'收益+5/s',baseCost:500,costMult:1.5,effect:()=>{g.goldPerSecond+=5}},{id:'mine',name:'矿洞',desc:'收益+20/s',baseCost:3000,costMult:1.6,effect:()=>{g.goldPerSecond+=20}},{id:'factory',name:'工厂',desc:'收益+100/s',baseCost:20000,costMult:1.7,effect:()=>{g.goldPerSecond+=100}}];
+        const shopItems = [{id:'no_ads',name:'🚫 去广告',desc:'移除广告',price:30,icon:'🚫'},{id:'gold_100',name:'💰 100金币',desc:'快速起步',price:3,icon:'💰'},{id:'vip_7',name:'⭐ VIP 7天',desc:'2倍收益',price:50,icon:'⭐'},{id:'map_unlock',name:'🗺️ 解锁雪山',desc:'2倍加成',price:20,icon:'🏔️'}];
         
-        const upgradeConfig = [
-            { id: 'pickaxe', name: '更好的镐子', desc: '点击+1', baseCost: 15, costMult: 1.5, effect: () => { gameData.clickPower += 1; } },
-            { id: 'miner', name: '雇佣矿工', desc: '收益+1/s', baseCost: 50, costMult: 1.4, effect: () => { gameData.goldPerSecond += 1; } },
-            { id: 'drill', name: '钻探机', desc: '收益+5/s', baseCost: 500, costMult: 1.5, effect: () => { gameData.goldPerSecond += 5; } },
-            { id: 'mine', name: '矿洞', desc: '收益+20/s', baseCost: 3000, costMult: 1.6, effect: () => { gameData.goldPerSecond += 20; } },
-            { id: 'factory', name: '黄金工厂', desc: '收益+100/s', baseCost: 20000, costMult: 1.7, effect: () => { gameData.goldPerSecond += 100; } }
-        ];
+        let g = {gold:0,gems:0,clickPower:1,goldPerSecond:0,lastSave:Date.now(),upgrades:{},purchases:{},currentMap:0,checkinDays:[],points:0,invites:0,cashOut:0,chatName:'玩家'+Math.floor(Math.random()*10000)};
         
-        const shopItems = [
-            { id: 'no_ads', name: '🚫 去广告', desc: '移除所有广告', price: 30, type: 'one_time', icon: '🚫' },
-            { id: 'gold_100', name: '💰 100金币', desc: '快速起步', price: 3, type: 'currency', icon: '💰' },
-            { id: 'gold_500', name: '💎 500金币', desc: '超值划算', price: 12, type: 'currency', icon: '💎' },
-            { id: 'vip_7', name: '⭐ VIP 7天', desc: '双倍收益', price: 50, type: 'subscription', icon: '⭐' }
-        ];
+        function init() { loadGame(); renderUpgrades(); renderShop(); renderCheckin(); renderLeaderboard(); startChat(); setupEvents(); startLoop(); updateDisplay(); checkAd(); }
         
-        let showAds = true, adClickCount = 0;
-        let totalClicks = 0, totalUpgrades = 0;
+        function loadGame() { const s=localStorage.getItem('minerTycoon'); if(s){const d=JSON.parse(s);g={...g,...d};} }
+        function saveGame() { g.lastSave=Date.now(); localStorage.setItem('minerTycoon',JSON.stringify(g)); }
         
-        function init() { loadGame(); checkOfflineEarnings(); renderUpgrades(); renderShop(); updateEarnStats(); setupEventListeners(); startGameLoop(); updateDisplay(); checkAdStatus(); }
+        function switchTab(tab) { document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active')); document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active')); document.getElementById('tab-'+tab).classList.add('active'); event.target.classList.add('active'); }
         
-        function loadGame() { const saved = localStorage.getItem('minerTycoon'); if (saved) { const data = JSON.parse(saved); gameData = { ...gameData, ...data }; totalClicks = gameData.totalClicks || 0; showAds = !gameData.purchases?.no_ads; } }
-        function saveGame() { gameData.lastSave = Date.now(); gameData.totalClicks = totalClicks; localStorage.setItem('minerTycoon', JSON.stringify(gameData)); }
+        function selectMap(idx) { if(idx<mapConfig.length&&g.totalGold>=mapConfig[idx].req){g.currentMap=idx;document.querySelectorAll('.map-btn').forEach((b,i)=>b.classList.toggle('active',i===idx));document.getElementById('mapBonus').textContent='x'+mapConfig[idx].bonus;saveGame();} }
         
-        function checkOfflineEarnings() { const now = Date.now(), offlineTime = (now - gameData.lastSave) / 1000; if (offlineTime > 60 && gameData.goldPerSecond > 0) { const earnings = Math.floor(offlineTime * gameData.goldPerSecond * 0.5); if (earnings > 0) { gameData.gold += earnings; gameData.totalGold += earnings; document.getElementById('offlineAmount').textContent = formatNumber(earnings); document.getElementById('offlineModal').classList.add('show'); } } }
-        function closeOfflineModal() { document.getElementById('offlineModal').classList.remove('show'); }
+        function clickMine(e) { const gain=g.clickPower*mapConfig[g.currentMap].bonus; g.gold+=gain; g.totalGold=(g.totalGold||0)+gain; g.points+=1; createEffect(e.clientX,e.clientY,'+'+fmt(gain)); updateDisplay(); renderUpgrades(); renderCheckin(); checkMapUnlock(); }
         
-        function renderUpgrades() { const container = document.getElementById('upgrades'); container.innerHTML = upgradeConfig.map(u => { const owned = gameData.upgrades[u.id] || 0; const cost = Math.floor(u.baseCost * Math.pow(u.costMult, owned)); const canAfford = gameData.gold >= cost; return '<div class="upgrade-item ' + (canAfford ? '' : 'locked') + '" onclick="buyUpgrade(\'' + u.id + '\')"><div class="upgrade-info"><h4>' + u.name + '</h4><p>' + u.desc + '</p><div class="owned">已购买: ' + owned + '</div></div><div class="upgrade-cost"><div class="cost-value">' + formatNumber(cost) + '</div><div class="cost-label">💰</div></div></div>'; }).join(''); }
+        function createEffect(x,y,text) { const el=document.createElement('div');el.className='click-text';el.textContent=text;el.style.left=(x-20+Math.random()*40)+'px';el.style.top=(y-20+Math.random()*40)+'px';document.getElementById('clickEffects').appendChild(el);setTimeout(()=>el.remove(),1000); }
         
-        function renderShop() { const container = document.getElementById('shopItems'); container.innerHTML = shopItems.map(item => { const owned = gameData.purchases?.[item.id] ? 'owned' : ''; const ownedText = gameData.purchases?.[item.id] ? ' (已购买)' : ''; return '<div class="shop-item ' + owned + '" onclick="buyItem(\'' + item.id + '\')"><div class="shop-item-info"><h4>' + item.icon + ' ' + item.name + '</h4><p>' + item.desc + '</p></div><div class="shop-item-price"><div class="price-value">$' + item.price + ownedText + '</div><div class="price-label">美元</div></div></div>'; }).join(''); }
+        function buyUpgrade(id) { const u=upgradeConfig.find(x=>x.id===id); const owned=g.upgrades[id]||0; const cost=Math.floor(u.baseCost*Math.pow(u.costMult,owned)); if(g.gold>=cost){g.gold-=cost;g.upgrades[id]=owned+1;u.effect();saveGame();updateDisplay();renderUpgrades();} }
         
-        function checkAdStatus() { const banner = document.getElementById('adBanner'); if (showAds) { banner.classList.add('has-ads'); banner.innerHTML = '<div class="ad-text">📢 感谢广告支持！</div>'; } else { banner.classList.remove('has-ads'); banner.innerHTML = '<div class="ad-text">🌟 无广告版</div>'; } }
+        function renderUpgrades() { document.getElementById('upgrades').innerHTML=upgradeConfig.map(u=>{const o=g.upgrades[u.id]||0;const c=Math.floor(u.baseCost*Math.pow(u.costMult,o));return'<div class="upgrade-item '+(g.gold>=c?'':'locked')+'" onclick="buyUpgrade(\''+u.id+'\')"><div><h4>'+u.name+'</h4><p style="font-size:12px;color:#aaa;">'+u.desc+'</p><p style="font-size:12px;color:#4ade80;">已购买: '+o+'</p></div><div style="text-align:right;"><div style="font-size:18px;color:#ffd700;">'+fmt(c)+'</div><div style="font-size:11px;color:#888;">💰</div></div></div>'}).join(''); }
         
-        function clickMine(e) { const goldGain = gameData.clickPower; gameData.gold += goldGain; gameData.totalGold += goldGain; totalClicks++; addPoints(1); createClickEffect(e.clientX, e.clientY, '+' + formatNumber(goldGain)); updateDisplay(); renderUpgrades(); adClickCount++; if (showAds && adClickCount >= 10) { adClickCount = 0; showInterstitialAd(); } }
+        function renderShop() { document.getElementById('shopItems').innerHTML=shopItems.map(i=>'<div class="shop-item" onclick="buyItem(\''+i.id+'\')"><div style="font-size:40px;">'+i.icon+'</div><h4>'+i.name+'</h4><p style="color:#aaa;font-size:12px;">'+i.desc+'</p><div style="color:#ffd700;font-size:20px;font-weight:bold;">$'+i.price+'</div></div>').join(''); }
         
-        function createClickEffect(x, y, text) { const container = document.getElementById('clickEffects'); const el = document.createElement('div'); el.className = 'click-text'; el.textContent = text; el.style.left = (x - 20 + Math.random() * 40) + 'px'; el.style.top = (y - 20 + Math.random() * 40) + 'px'; container.appendChild(el); setTimeout(() => el.remove(), 1000); }
+        function buyItem(id) { const it=shopItems.find(x=>x.id===id); if(confirm('购买 '+it.name+' - $'+it.price+'？')){g.purchases= g.purchases||{}; g.purchases[id]=true; if(id==='gold_100')g.gold+=100; saveGame(); renderShop(); alert('购买成功！'); } }
         
-        function buyUpgrade(id) { const upgrade = upgradeConfig.find(u => u.id === id); const owned = gameData.upgrades[id] || 0; const cost = Math.floor(upgrade.baseCost * Math.pow(upgrade.costMult, owned)); if (gameData.gold >= cost) { gameData.gold -= cost; gameData.upgrades[id] = owned + 1; totalUpgrades++; upgrade.effect(); saveGame(); updateDisplay(); renderUpgrades(); } }
+        function checkMapUnlock() { document.querySelectorAll('.map-btn').forEach((b,i)=>{const req=mapConfig[i].req;if(g.totalGold>=req&&i>0)b.classList.remove('locked');}); }
         
-        function addPoints(amount) { gameData.points += amount; updateEarnStats(); }
+        function renderCheckin() { const days=['一','二','三','四','五','六','天']; const rewards=[50,100,150,200,300,400,500]; let html=''; for(let i=0;i<7;i++){const checked=g.checkinDays.includes(i);const today=new Date().getDay()===(i+1)%7;html+='<div class="checkin-day '+(checked?'checked':'')+(today?' today':'')+(i>(g.checkinDays.length)&&!checked?' future':'')+'"><div class="day">周'+days[i]+'</div><div class="reward">'+rewards[i]+'💰</div></div>';} document.getElementById('checkinDays').innerHTML=html; document.getElementById('streak').textContent=g.checkinDays.length+'天'; }
         
-        function updateEarnStats() { document.getElementById('totalPoints').textContent = formatNumber(gameData.points); document.getElementById('inviteCount').textContent = gameData.invites; document.getElementById('cashOut').textContent = '$' + gameData.cashOut.toFixed(2); }
+        function doCheckin() { const today=new Date().toDateString(); if(g.lastCheckin===today)return alert('今日已签到！'); const dayIdx=g.checkinDays.length%7; const rewards=[50,100,150,200,300,400,500]; g.gold+=rewards[dayIdx]; g.checkinDays.push(dayIdx); g.lastCheckin=today; renderCheckin(); updateDisplay(); saveGame(); alert('签到成功！+'+rewards[dayIdx]+'金币'); }
         
-        function inviteFriend() { document.getElementById('inviteLink').textContent = 'https://miner-tycoon.game/?ref=user_' + Math.random().toString(36).substr(2, 8); document.getElementById('inviteModal').classList.add('show'); }
-        function closeInvite() { document.getElementById('inviteModal').classList.remove('show'); }
-        function copyInviteLink() { const link = document.getElementById('inviteLink').textContent; navigator.clipboard.writeText(link).then(() => alert('链接已复制！分享给好友吧~')); addPoints(100); gameData.invites++; updateEarnStats(); saveGame(); }
+        // 排行榜
+        const fakeUsers = [{name:'💎 矿王之王',score:5000000},{name:'🏆 富甲一方',score:2000000},{name:'⛏️ 挖掘达人',score:800000},{name:'🌲 森林矿工',score:300000},{name:'🏔️ 雪山猎人',score:150000},{name:'🔥 火山烈焰',score:80000},{name:'🌟 新手矿工',score:10000}];
+        function renderLeaderboard() { const sorted=[...fakeUsers,{name:g.chatName,score:g.totalGold||0}].sort((a,b)=>b.score-a.score); document.getElementById('leaderboardList').innerHTML=sorted.slice(0,10).map((u,i)=>'<div class="lb-item"><div class="lb-rank lb-rank-'+(i+1)+'">'+(i+1)+'</div><div class="lb-info"><div class="lb-name">'+u.name+'</div><div class="lb-score">'+fmt(u.score)+' 金币</div></div><div class="lb-trophy">'+(i<3?'🏆':'')+'</div></div>').join(''); }
+        function refreshLeaderboard() { renderLeaderboard(); alert('排行榜已刷新！'); }
         
-        function exchangePoints() { document.getElementById('exchangeModal').classList.add('show'); }
+        // 聊天
+        const chatMsgs = [{name:'系统',text:'欢迎来到矿工大亨！',system:true},{name:'矿王',text:'今天挖到钻石了！',system:false},{name:'新人',text:'哪个地图好玩？',system:false}];
+        function startChat() { const c=document.getElementById('chatMessages'); chatMsgs.forEach(m=>c.innerHTML+='<div class="chat-msg '+(m.system?'system':'')+'"><div class="msg-name">'+m.name+'</div><div class="msg-text">'+m.text+'</div></div>'); c.scrollTop=c.scrollHeight; }
+        function sendChat() { const inp=document.getElementById('chatInput'); if(!inp.value.trim())return; const c=document.getElementById('chatMessages'); c.innerHTML+='<div class="chat-msg"><div class="msg-name" style="color:#ffd700;">'+g.chatName+'</div><div class="msg-text">'+inp.value+'</div></div>'; c.scrollTop=c.scrollHeight; inp.value=''; }
+        function handleChatKey(e) { if(e.key==='Enter')sendChat(); }
+        
+        // 赚钱
+        function renderExchange() { document.getElementById('exchangeItems').innerHTML='<div class="shop-item" onclick="doExchange(100,500)"><h4>💰 500金币</h4><p style="color:#aaa">100积分</p></div><div class="shop-item" onclick="doExchange(1000,1)"><h4>💵 $1现金</h4><p style="color:#aaa">1000积分 满$10提现</p></div><div class="shop-item" onclick="doExchange(5000,5)"><h4>🎁 $5礼品卡</h4><p style="color:#aaa">5000积分</p></div>'; }
+        function inviteFriend() { const link='https://miner-tycoon.game/?ref='+Math.random().toString(36).substr(2,8); prompt('邀请链接:',link); g.points+=100; g.invites++; updateEarn(); alert('已复制邀请链接！+100积分'); }
+        function exchangePoints() { renderExchange(); document.getElementById('exchangeModal').classList.add('show'); }
         function closeExchange() { document.getElementById('exchangeModal').classList.remove('show'); }
-        function doExchange(cost, reward) { if (gameData.points >= cost) { gameData.points -= cost; if (reward === 'giftcard') { alert('🎁 兑换成功！$5礼品卡将在3个工作日内发送到你的邮箱'); gameData.cashOut += 5; } else if (typeof reward === 'number') { if (cost >= 1000) { gameData.cashOut += reward; alert('💵 兑换成功！$' + reward + ' 已加入提现余额（满$10可提现）'); } else { gameData.gold += reward; alert('🎁 获得 ' + reward + ' 金币！'); } } else { gameData.gems += reward; alert('💎 获得 ' + reward + ' 钻石！'); } updateEarnStats(); saveGame(); } else { alert('积分不足！需要 ' + cost + ' 积分'); } }
+        function doExchange(cost,reward) { if(g.points>=cost){g.points-=cost; if(reward==5){alert('🎁 $5礼品卡已发放！');g.cashOut+=5;}else if(reward==1){g.cashOut+=1;alert('💵 $1已加入提现余额');}else{g.gold+=reward;alert('+'+reward+'金币');} updateEarn();saveGame();closeExchange();}else{alert('积分不足！');} }
+        function updateEarn() { document.getElementById('totalPoints').textContent=fmt(g.points); document.getElementById('inviteCount').textContent=g.invites; document.getElementById('cashOut').textContent='$'+g.cashOut; }
         
-        function openShop() { document.getElementById('shopModal').classList.add('show'); }
-        function closeShop() { document.getElementById('shopModal').classList.remove('show'); }
+        function checkAd() { const b=document.getElementById('adBanner'); if(g.purchases?.no_ads){b.innerHTML='<div class="ad-text">🌟 无广告版</div>';}else{b.classList.add('ads');b.innerHTML='<div class="ad-text">📢 广告位招租 - 感谢支持</div>';} }
         
-        function buyItem(itemId) { const item = shopItems.find(i => i.id === itemId); if (!item || gameData.purchases?.[itemId]) return; const confirmBuy = confirm('确认购买 "' + item.name + '" - $' + item.price + '？'); if (confirmBuy) { gameData.purchases = gameData.purchases || {}; gameData.purchases[itemId] = true; if (item.type === 'currency') { const goldAmount = item.id === 'gold_100' ? 100 : 500; gameData.gold += goldAmount; alert('购买成功！'); } else if (item.id === 'no_ads') { showAds = false; checkAdStatus(); alert('去广告成功！'); } saveGame(); renderShop(); } }
+        function startLoop() { setInterval(()=>{if(g.goldPerSecond>0){const gain=g.goldPerSecond*mapConfig[g.currentMap].bonus; g.gold+=gain; g.totalGold+=gain; updateDisplay();renderUpgrades();}},1000); setInterval(saveGame,30000); }
+        function updateDisplay() { document.getElementById('gold').textContent=fmt(g.gold); document.getElementById('gems').textContent=g.gems; document.getElementById('gps').textContent=fmt(g.goldPerSecond*mapConfig[g.currentMap].bonus)+'/s'; }
+        function fmt(n) { if(n>=1e9)return(n/1e9).toFixed(1)+'B'; if(n>=1e6)return(n/1e6).toFixed(1)+'M'; if(n>=1e3)return(n/1e3).toFixed(1)+'K'; return Math.floor(n).toString(); }
+        function setupEvents() { document.getElementById('mineBtn').addEventListener('click',clickMine); }
         
-        function watchAd() { addPoints(50); if (showAds) { const adOverlay = document.createElement('div'); adOverlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.95);z-index:5000;display:flex;justify-content:center;align-items:center;flex-direction:column;'; adOverlay.innerHTML = '<h2 style="color:#ffd700;">🎬 播放广告中...</h2>'; document.body.appendChild(adOverlay); setTimeout(() => { adOverlay.remove(); alert('🎁 观看成功！+50积分'); }, 3000); } else { alert('无广告版：+50积分'); } }
-        
-        function showInterstitialAd() { const adModal = document.createElement('div'); adModal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:4000;display:flex;justify-content:center;align-items:center;'; adModal.innerHTML = '<div style="background:#1a1a2e;padding:40px;border-radius:20px;text-align:center;border:2px solid #ffd700;"><h2 style="color:#ffd700;">📢 广告</h2></div>'; document.body.appendChild(adModal); setTimeout(() => adModal.remove(), 2000); }
-        
-        function claimDaily() { const now = Date.now(), dayMs = 24 * 60 * 60 * 1000; if (now - gameData.dailyTime < dayMs && gameData.dailyClaimed) { alert('今日已领取！'); return; } const reward = 100 + (gameData.dailyStreak || 0) * 50; gameData.gold += reward; gameData.dailyClaimed = true; gameData.dailyTime = now; gameData.dailyStreak = (gameData.dailyStreak || 0) + 1; alert('🎁 每日奖励: +' + formatNumber(reward) + ' 金币！'); saveGame(); updateDisplay(); }
-        
-        function startGameLoop() { setInterval(() => { if (gameData.goldPerSecond > 0) { gameData.gold += gameData.goldPerSecond; gameData.totalGold += gameData.goldPerSecond; addPoints(Math.floor(gameData.goldPerSecond / 10)); updateDisplay(); renderUpgrades(); } }, 1000); setInterval(saveGame, 30000); }
-        function updateDisplay() { document.getElementById('gold').textContent = formatNumber(gameData.gold); document.getElementById('gems').textContent = gameData.gems + ' 💎'; document.getElementById('gps').textContent = formatNumber(gameData.goldPerSecond) + '/s'; }
-        function formatNumber(num) { if (num >= 1e9) return (num / 1e9).toFixed(1) + 'B'; if (num >= 1e6) return (num / 1e6).toFixed(1) + 'M'; if (num >= 1e3) return (num / 1e3).toFixed(1) + 'K'; return Math.floor(num).toString(); }
-        function setupEventListeners() { document.getElementById('mineBtn').addEventListener('click', clickMine); }
         init();
     </script>
 </body>
